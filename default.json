@@ -1,0 +1,160 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended"
+    ],
+    "labels": [
+        "automated"
+    ],
+    "lockFileMaintenance": {
+        "enabled": true
+    },
+    "packageRules": [
+        // Automerge all minor/patch/pin/digest updates by default.
+        // Individual manager rules below OVERRIDE this for groups that warrant review.
+        {
+            "matchUpdateTypes": [
+                "minor",
+                "patch",
+                "pin",
+                "digest"
+            ],
+            "automerge": true
+        },
+
+        // ⚠️ BEHAVIOR CHANGE vs previous per-repo configs:
+        // GitHub Actions updates are now GROUPED into a single "GitHub Actions" PR and
+        // require MANUAL REVIEW (automerge: false). Previously, each action version
+        // automerged individually on minor/patch.
+        //
+        // Rationale: CI infrastructure changes are low-volume, easy to review in batch,
+        // and worth a human glance before they affect every workflow run.
+        //
+        // To restore individual automerge, add this to your repo's renovate.jsonc:
+        //   { "matchManagers": ["github-actions"], "automerge": true }
+        {
+            "matchManagers": [
+                "github-actions"
+            ],
+            "groupName": "GitHub Actions",
+            "matchUpdateTypes": [
+                "minor",
+                "patch",
+                "digest"
+            ],
+            "automerge": false
+        },
+
+        // ⚠️ BEHAVIOR CHANGE vs previous per-repo configs:
+        // NuGet (.NET) updates are now GROUPED into a single ".NET dependencies and tools"
+        // PR and require MANUAL REVIEW (automerge: false). Previously, each package
+        // automerged individually on minor/patch.
+        //
+        // Rationale: NuGet dependency updates benefit from a single grouped PR so you can
+        // assess the whole picture (did anything shift together that looks suspicious?)
+        // before merging. The volume is manageable as a batch.
+        //
+        // To restore automerge (grouped PR still exists, merges automatically once checks
+        // pass), add this to your repo's renovate.jsonc packageRules:
+        //   { "matchManagers": ["nuget"], "automerge": true }
+        {
+            "matchManagers": [
+                "nuget"
+            ],
+            "groupName": ".NET dependencies and tools",
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ],
+            "automerge": false
+        },
+
+        // semantic-release toolchain — grouped, manual review.
+        // These control release automation; a bad update breaks every repo's publish pipeline.
+        {
+            "matchDatasources": [
+                "npm"
+            ],
+            "matchDepNames": [
+                "semantic-release",
+                "@semantic-release/changelog",
+                "@semantic-release/exec"
+            ],
+            "groupName": "semantic-release",
+            "automerge": false
+        },
+
+        // Kubernetes deployment tools (kubectl, helm) — grouped, manual review.
+        // Versions are often pinned for cluster compat; review before bumping.
+        {
+            "matchDatasources": [
+                "github-releases"
+            ],
+            "matchDepNames": [
+                "kubernetes/kubernetes",
+                "helm/helm"
+            ],
+            "groupName": "Kubernetes deployment tools",
+            "automerge": false
+        },
+
+        // Never automerge major updates regardless of any other rule.
+        {
+            "matchUpdateTypes": [
+                "major"
+            ],
+            "automerge": false
+        }
+    ],
+    "customManagers": [
+        // Track semantic-release version pinned as `semantic_version: x.y.z` in workflow files.
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^\\.github/workflows/.*\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "semantic_version:\\s*(?<currentValue>\\S+)"
+            ],
+            "depNameTemplate": "semantic-release",
+            "datasourceTemplate": "npm"
+        },
+        // Track @semantic-release/plugin@x.y.z inline pins in workflow files.
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^\\.github/workflows/.*\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "(?<depName>@semantic-release/[a-z-]+)@(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+            ],
+            "datasourceTemplate": "npm"
+        },
+        // Track kubectl version pinned as `kubectl_version: vX.Y.Z` in workflow files.
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^\\.github/workflows/.*\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "kubectl_version:\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+                "kubectl_version:[\\s\\S]*?default:\\s*\"?(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"?"
+            ],
+            "depNameTemplate": "kubernetes/kubernetes",
+            "datasourceTemplate": "github-releases"
+        },
+        // Track helm version pinned as `helm_version: vX.Y.Z` in workflow files.
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^\\.github/workflows/.*\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "helm_version:\\s*(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+                "helm_version:[\\s\\S]*?default:\\s*\"?(?<currentValue>v\\d+\\.\\d+\\.\\d+)\"?"
+            ],
+            "depNameTemplate": "helm/helm",
+            "datasourceTemplate": "github-releases"
+        }
+    ]
+}

@@ -1,0 +1,28 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        // Shared Arkanis preset — source of truth for grouping, automerge policy,
+        // lockFileMaintenance, and custom managers. Changes here roll out automatically.
+        // https://github.com/ArkanisCorporation/renovate-config
+        "github>ArkanisCorporation/renovate-config"
+    ],
+    "reviewers": [
+        // Replace with your repo's team slug.
+        "team:your-team-here"
+    ],
+    "packageRules": [
+        // ⚠️ BEHAVIOR CHANGE from old per-repo renovate.json:
+        //
+        // NuGet (.NET) and GitHub Actions updates are now GROUPED into a single PR each
+        // and require MANUAL REVIEW — they no longer automerge individual minor/patch deps.
+        //
+        // The grouped PR merges as one when all checks pass and you approve it.
+        // This is intentional: see the shared preset README for rationale.
+        //
+        // To RESTORE AUTOMERGE for either group (grouped PR will still exist, but merges
+        // automatically once all checks pass), uncomment the relevant line(s) below:
+        //
+        // { "matchManagers": ["nuget"], "automerge": true },
+        // { "matchManagers": ["github-actions"], "automerge": true },
+    ]
+}
