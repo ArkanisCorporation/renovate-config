@@ -22,6 +22,44 @@ That's it. All grouping rules, automerge policy, lockFileMaintenance, and custom
 
 ---
 
+## 🔴 Private repos + automerge — read before using the default preset
+
+**TL;DR: if your repo is private and your org is not on a paid GitHub plan (Team or Enterprise), use the [conservative preset](#conservative-preset) instead.**
+
+### Why automerge: true is unsafe without enforced branch protection
+
+Renovate's automerge works by merging a PR as soon as it is eligible. "Eligible" means GitHub's branch merge conditions are satisfied. Those conditions come from branch protection rules — specifically: required status checks must pass, required reviewers must approve.
+
+**GitHub's free plan does not enforce branch protection rules in private org repos.** Without enforcement, there are no conditions to satisfy. Renovate will merge the PR immediately after opening it — with failing CI, zero reviews, and no human ever seeing it.
+
+This is not a Renovate bug. Renovate is correctly using the GitHub API. The GitHub API allows the merge because the branch protection rules aren't enforced.
+
+### How to check
+
+If your org is on a free plan and any of your repos are private:
+
+1. Go to the repo → Settings → Branches → protection rule for `main`/`master`
+2. If you can't enable "Require status checks" or "Require a pull request before merging" at all, or if they're greyed out — your plan doesn't enforce them
+3. Use the conservative preset for that repo
+
+### Conservative preset
+
+Inherits all grouping rules, lockFileMaintenance, labels, and custom managers from the default preset. Disables all automerge. Safe for any repo regardless of branch protection setup.
+
+```jsonc
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "github>ArkanisCorporation/renovate-config:conservative"
+    ],
+    "reviewers": [
+        "team:your-team-here"
+    ]
+}
+```
+
+---
+
 ## ⚠️ Behavior change from old per-repo configs
 
 If your repo previously had its own `renovate.json` with automerge enabled for minor/patch updates, **two things now work differently**:
@@ -105,6 +143,7 @@ Per-repo `packageRules` entries are **appended** to the preset's rules. Later ru
 ## Files
 
 - `default.json` — the preset loaded by `github>ArkanisCorporation/renovate-config`
+- `conservative.json` — the preset loaded by `github>ArkanisCorporation/renovate-config:conservative`; same as default but all automerge disabled
 - `example-consumer.jsonc` — copy this into a consumer repo as `renovate.jsonc` and fill in the team slug
 
 > **Note:** `default.json` uses JSONC (JSON with comments). Renovate's config parser is JSONC-aware and handles this correctly. If a future Renovate version rejects inline comments in preset files, the same documentation lives in this README.

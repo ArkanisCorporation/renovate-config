@@ -4,6 +4,11 @@
         // Shared Arkanis preset — source of truth for grouping, automerge policy,
         // lockFileMaintenance, and custom managers. Changes here roll out automatically.
         // https://github.com/ArkanisCorporation/renovate-config
+        //
+        // ⚠️ PRIVATE REPO ON FREE GITHUB PLAN? Use the conservative preset instead:
+        //   "github>ArkanisCorporation/renovate-config:conservative"
+        // Without enforced branch protection rules, automerge: true merges PRs instantly
+        // even with failing CI and no reviews. See README for full details.
         "github>ArkanisCorporation/renovate-config"
     ],
     "reviewers": [

@@ -10,6 +10,23 @@
         "enabled": true
     },
     "packageRules": [
+        // ⚠️ AUTOMERGE + PRIVATE REPOS WARNING:
+        // automerge: true is only safe when GitHub branch protection rules are actively
+        // enforced — specifically: required status checks must pass AND (optionally)
+        // required reviewers must approve before merge is allowed.
+        //
+        // On GitHub's FREE plan, branch protection rules in PRIVATE org repos are NOT
+        // enforced at the API level. Renovate will merge PRs immediately upon creation,
+        // even if CI is failing and no one has reviewed. This applies to all automerge
+        // rules in this preset.
+        //
+        // If your repo is private and your org is not on a paid GitHub plan (Team or
+        // Enterprise), use the conservative preset instead, which disables all automerge:
+        //
+        //   "extends": ["github>ArkanisCorporation/renovate-config:conservative"]
+        //
+        // See README.md for full details.
+
         // Automerge all minor/patch/pin/digest updates by default.
         // Individual manager rules below OVERRIDE this for groups that warrant review.
         {
