@@ -86,6 +86,27 @@
             "automerge": false
         },
 
+        {
+          "description": "Require approval for NuGet major updates",
+          "matchManagers": [
+              "nuget"
+          ],
+          "matchUpdateTypes": [
+              "major"
+          ],
+          "dependencyDashboardApproval": true
+        },
+
+        {
+          "description": "Run workload restore for .NET workload-based projects",
+          "matchManagers": [
+              "nuget"
+          ],
+          "postUpdateOptions": [
+              "dotnetWorkloadRestore"
+          ]
+        },
+
         // semantic-release toolchain — grouped, manual review.
         // These control release automation; a bad update breaks every repo's publish pipeline.
         {
