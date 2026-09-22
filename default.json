@@ -193,6 +193,31 @@
             ],
             "depNameTemplate": "helm/helm",
             "datasourceTemplate": "github-releases"
+        },
+        // Track Docker image tags in static Aspire AppHost container declarations.
+        //
+        // Supported forms:
+        //   .AddContainer("resource", "registry/image", "tag")
+        //   .WithImage("registry/image", "tag")
+        //   .WithImage("registry/image").WithImageTag("tag")
+        //
+        // This matcher is intentionally text-based, so matching examples in comments are
+        // updated together with live declarations. The tagless WithImage form can include
+        // further fluent calls, but only before its WithImageTag and never across a semicolon.
+        // Comments between the two methods are not supported.
+        {
+            "customType": "regex",
+            "description": "Update static Aspire container image tags",
+            "managerFilePatterns": [
+                "/(^|/)AppHost\\.cs$/"
+            ],
+            "matchStrings": [
+                "\\.AddContainer\\(\\s*\"[^\"]+\"\\s*,\\s*\"(?<depName>[^\"]+)\"\\s*,\\s*\"(?<currentValue>[^\"]+)\"\\s*\\)",
+                "\\.WithImage\\(\\s*\"(?<depName>[^\"]+)\"\\s*,\\s*\"(?<currentValue>[^\"]+)\"\\s*\\)",
+                "\\.WithImage\\(\\s*\"(?<depName>[^\"]+)\"\\s*\\)(?:\\s*\\.[A-Za-z_][A-Za-z0-9_]*\\s*\\([^;]*?\\))*?\\s*\\.WithImageTag\\(\\s*\"(?<currentValue>[^\"]+)\"\\s*\\)"
+            ],
+            "datasourceTemplate": "docker",
+            "versioningTemplate": "docker"
         }
     ]
 }
