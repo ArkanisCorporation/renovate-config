@@ -109,7 +109,31 @@ Same deal. All GitHub Actions minor/patch/digest updates batch into a single **"
 | semantic-release toolchain | grouped, manual review |
 | Kubernetes tools (kubectl, helm) | grouped, manual review |
 | major | never automerge |
-| custom managers | tracks `semantic_version`, `kubectl_version`, `helm_version` pins in workflow YAML |
+| custom managers | tracks `semantic_version`, `kubectl_version`, `helm_version` pins in workflow YAML, plus Docker tags in static Aspire AppHost declarations |
+
+### Aspire container image tags
+
+The preset detects Docker image tags in static string-literal `AppHost.cs` container references.
+It supports these forms:
+
+```csharp
+builder.AddContainer("authentik", "ghcr.io/goauthentik/server", "2026.8.3");
+
+resource.WithImage("ghcr.io/goauthentik/server", "2026.8.3");
+
+resource
+    .WithImage("ghcr.io/goauthentik/server")
+    .WithImageTag("2026.8.3");
+```
+
+For the last form, `WithImage` must precede `WithImageTag` in the same fluent expression, with no semicolon between them.
+Intervening fluent calls and line breaks are supported.
+Comments between the tagless `WithImage` call and `WithImageTag` are not supported.
+Renovate updates only the tag and leaves the image repository unchanged.
+Dynamic image names or tags are intentionally excluded because Renovate cannot resolve their values reliably.
+The matcher is text-based, so matching examples in comments are also candidates for updates.
+Keep commented container examples current, or rewrite them so they do not match one of the supported forms.
+The conservative preset inherits this manager automatically.
 
 ---
 
