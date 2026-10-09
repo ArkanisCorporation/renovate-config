@@ -18,9 +18,12 @@
         "github>ArkanisCorporation/renovate-config"
     ],
     "packageRules": [
-        // No match conditions = applies to every dep, after all rules from the base
-        // preset have been applied. This wins over any automerge: true set above.
+        // Match every package after the base preset's rules have been applied.
+        // Renovate requires an explicit selector; this disables inherited automerge.
         {
+            "matchPackageNames": [
+                "*"
+            ],
             "automerge": false
         }
     ]
