@@ -49,6 +49,9 @@
         //
         // To restore individual automerge, add this to your repo's renovate.jsonc:
         //   { "matchManagers": ["github-actions"], "automerge": true }
+        //
+        // "pinDigest" is included so the one-time tag -> SHA conversion from the pinning
+        // rules below lands in this same grouped, reviewed PR instead of one PR per action.
         {
             "matchManagers": [
                 "github-actions"
@@ -57,9 +60,42 @@
             "matchUpdateTypes": [
                 "minor",
                 "patch",
-                "digest"
+                "digest",
+                "pinDigest"
             ],
             "automerge": false
+        },
+
+        // Pin third-party GitHub Actions and reusable workflows to full commit SHAs
+        // (`uses: owner/action@<40-char-sha> # v4.3.1`), so a moved or compromised upstream
+        // tag cannot change what runs without a reviewed Renovate PR (ARK-662, ARK-358).
+        //
+        // Equivalent to Renovate's `helpers:pinGitHubActionDigestsToSemver`, inlined so it
+        // can exclude ArkanisCorporation/**: our own ci repo is consumed via the floating
+        // `@v1` tag on purpose (moving that tag is how CI changes roll out org-wide), and the
+        // helper's semver extractVersion would otherwise rewrite those refs too.
+        {
+            "description": "Pin third-party GitHub Action digests",
+            "matchDepTypes": [
+                "action",
+                "workflow"
+            ],
+            "matchPackageNames": [
+                "!ArkanisCorporation/**"
+            ],
+            "pinDigests": true
+        },
+        {
+            "description": "Resolve pinned third-party GitHub Actions to exact SemVer version comments",
+            "matchDepTypes": [
+                "action",
+                "workflow"
+            ],
+            "matchPackageNames": [
+                "!ArkanisCorporation/**"
+            ],
+            "extractVersion": "^(?<version>v?\\d+\\.\\d+\\.\\d+)$",
+            "versioning": "regex:^v?(?<major>\\d+)(\\.(?<minor>\\d+)\\.(?<patch>\\d+))?$"
         },
 
         // ⚠️ BEHAVIOR CHANGE vs previous per-repo configs:
