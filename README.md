@@ -105,11 +105,27 @@ Same deal. All GitHub Actions minor/patch/digest updates batch into a single **"
 | `lockFileMaintenance` | weekly lock-file refresh PR |
 | minor/patch/pin/digest | automerge (overridden for groups below) |
 | **GitHub Actions** | grouped, manual review |
+| GitHub Actions SHA pinning | third-party `uses:` pinned to commit SHA + exact version comment; `ArkanisCorporation/**` excluded |
 | **.NET / NuGet** | grouped, manual review |
 | semantic-release toolchain | grouped, manual review |
 | Kubernetes tools (kubectl, helm) | grouped, manual review |
 | major | never automerge |
 | custom managers | tracks `semantic_version`, `kubectl_version`, `helm_version` pins in workflow YAML, plus Docker tags in static Aspire AppHost declarations |
+
+### GitHub Actions SHA pinning
+
+Third-party actions and reusable workflows are pinned to full commit SHAs, so a moved or compromised upstream tag can't change what runs without a reviewed PR:
+
+```yaml
+# before
+- uses: actions/checkout@v7
+# after Renovate's pin PR
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+```
+
+This matches Renovate's `helpers:pinGitHubActionDigestsToSemver`. The preset inlines it so it can exclude `ArkanisCorporation/**`. Our own `ci` repo is consumed via the floating `@v1` tag on purpose: moving that tag is how CI changes roll out across the org.
+
+**Effect on existing repos:** on its next run, Renovate adds the tag → SHA conversion to the grouped **"GitHub Actions"** PR (manual review, even on the default preset). After that, pins are kept current through the same grouped PR.
 
 ### Aspire container image tags
 
