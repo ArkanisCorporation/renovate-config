@@ -2,13 +2,15 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         // Shared Arkanis preset — source of truth for grouping, automerge policy,
-        // lockFileMaintenance, and custom managers. Changes here roll out automatically.
+        // monthly lockFileMaintenance, and custom managers. Changes here roll out automatically.
+        // Routine updates and Renovate automerges: Saturday 00:00–08:00 Europe/Prague.
+        // Existing branches wait too; supported vulnerability fixes bypass the window.
         // https://github.com/ArkanisCorporation/renovate-config
         //
-        // ⚠️ PRIVATE REPO ON FREE GITHUB PLAN? Use the conservative preset instead:
+        // REQUIRE HUMAN MERGING FOR ALL UPDATES? Use the conservative preset instead:
         //   "github>ArkanisCorporation/renovate-config:conservative"
-        // Without enforced branch protection rules, automerge: true merges PRs instantly
-        // even with failing CI and no reviews. See README for full details.
+        // Default uses Renovate-managed automerge and waits for CI even without branch
+        // protection. Keep platformAutomerge/ignoreTests false. See README for details.
         "github>ArkanisCorporation/renovate-config"
     ],
     "reviewers": [

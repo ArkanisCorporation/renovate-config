@@ -20,31 +20,119 @@ Add one line to your repo's `renovate.jsonc`:
 
 That's it. All grouping rules, automerge policy, lockFileMaintenance, and custom managers are inherited. Updates to this preset roll out automatically on the next Renovate run — no PR required in consumer repos.
 
+## Sustainable update cadence
+
+Routine branch creation, automatic branch updates and Renovate automerges run weekly on **Saturday, 00:00–08:00 Europe/Prague**.
+The timezone follows CET/CEST automatically.
+The conservative preset inherits the same schedule and continues to disable automerge.
+
+```mermaid
+flowchart TD
+    A[Available update] --> B{GitHub vulnerability alert?}
+    B -->|Yes| C[Raise fix PR promptly\nNo release-age delay\nHuman review required]
+    B -->|No| D{Saturday 00:00–08:00\nEurope/Prague?}
+    D -->|No| E[Wait for next window]
+    D -->|Yes| F[Select eligible releases\nAt least 3 days old if timestamp exists]
+    F --> G[Apply existing dependency groups\nUp to 2 commits per hour per repo\nUp to 5 open routine PRs]
+    G --> H[Run repository CI]
+    H --> I{Existing policy allows automerge\nand checks pass?}
+    I -->|Yes| J[Renovate merges within window]
+    I -->|No| K[Wait for review or a later window]
+```
+
+| Control | Shared default | Purpose |
+|---|---|---|
+| `schedule` | `* 0-7 * * 6` | Batch routine updates weekly and avoid EU working hours |
+| `updateNotScheduled` | `false` | Prevent automatic branch refreshes outside the window |
+| `automergeSchedule` | Same Saturday window | Keep Renovate merges within the window too |
+| `platformAutomerge` | `false` | Let Renovate enforce merge timing; GitHub-native automerge ignores this schedule |
+| `commitHourlyLimit` | `2` per repository | Limit new-branch and automatic-rebase commits that trigger CI |
+| `prHourlyLimit` / `prConcurrentLimit` | `2` / `5` per repository | Bound PR arrival rate and open routine work |
+| `minimumReleaseAge` | `3 days` | Allow newly published versions to settle before selection |
+| `minimumReleaseAgeBehaviour` | `timestamp-optional` | Keep registries without release timestamps from becoming permanently blocked |
+| `internalChecksFilter` | `strict` | Filter versions still pending the release-age check |
+| `rebaseWhen` | `auto` | Keep automerge/up-to-date requirements compatible; scheduling and commit limits contain rebase work |
+| `lockFileMaintenance.schedule` | `* 0-7 1-7 * 6` | Refresh lock files only on the first Saturday each month |
+| `vulnerabilityAlerts` | Enabled, immediate eligibility, no age delay, manual merge | Keep supported GitHub vulnerability fixes outside the routine queue |
+
+### Why weekly Saturday overnight?
+
+| Cadence | Benefit | Tradeoff |
+|---|---|---|
+| Every weekday overnight | Small, frequent updates; next morning has staff available | Still repeats patch updates and CI runs throughout the week |
+| Friday night / Saturday morning (chosen) | Weekly batching, low developer CI contention, long gap before Monday | Deploy-on-merge repositories may need weekend incident coverage |
+| First and third Saturday | Fewer update windows and more skipped intermediate patches | Larger batches, longer routine delays, and a possible three-week gap |
+| Entire weekend | More time to clear a large queue | More opportunities for repeated updates within the same weekend |
+
+Weekly batching is the starting compromise between CI churn, review size and freshness.
+Keep the existing ecosystem groups and dependency-specific groups; avoid combining unrelated production operators into one large patch PR solely to save CI.
+The three-day release-age check is a settling period, not a batching mechanism: it applies to each version independently.
+The schedule does not guarantee exactly one update per dependency per week; an eligible newer release can still arrive within the eight-hour window.
+
+### Boundaries and rollout
+
+These settings gate Renovate actions, not the CI scheduler or production deployment windows.
+Jobs started before 08:00 can continue afterwards; human merges, manual rebase requests, security fixes and other automation can still trigger weekday CI.
+The hosted bot must actually visit the repository during the window; a schedule does not arrange a bot run or guarantee an automerge before the window closes.
+An eligible PR that misses the merge window waits for the next one.
+
+GitHub vulnerability-fix PRs bypass routine scheduling and rate limits, with release-age and dashboard approval delays removed explicitly here.
+They require human review and are only available where GitHub alerts, Renovate permissions and the dependency ecosystem support detection and remediation; this is not a scanner for every container or Helm vulnerability.
+The conservative preset keeps all automerge disabled, and existing consumer-specific safety rules still apply.
+
+All limits are per repository, so many repositories can still contend for shared runners at once.
+For strict fleet-wide CI capacity, also use runner capacity controls or stagger repository windows.
+Review queue depth, dependency CI runs, rebases and security-fix latency after four weekly windows; adjust limits or split windows if the backlog grows.
+
+The shared preset is overridable configuration, not an organization enforcement boundary.
+Consumer `schedule`, `packageRules`, manager settings or lock-file schedules can override it; audit exceptions before treating the organization as fully scheduled.
+Changes take effect for consumers of the default branch on their next Renovate run, while SHA/tag-pinned consumers require a preset-ref update.
+
+To opt a repository into first-and-third-Saturday routine updates, override both action windows:
+
+```jsonc
+{
+    "schedule": ["* 0-7 1-7,15-21 * 6"],
+    "automergeSchedule": ["* 0-7 1-7,15-21 * 6"]
+}
+```
+
+Renovate combines restricted day-of-month and day-of-week fields with AND, so this selects the first and third Saturday, not every Saturday plus those dates.
+Monthly lock-file maintenance remains on the first Saturday.
+
+References: [scheduling](https://docs.renovatebot.com/key-concepts/scheduling/), [automerge timing](https://docs.renovatebot.com/configuration-options/#automergeschedule), [commit limits](https://docs.renovatebot.com/configuration-options/#commithourlylimit), [release age](https://docs.renovatebot.com/key-concepts/minimum-release-age/), [vulnerability alerts](https://docs.renovatebot.com/configuration-options/#vulnerabilityalerts).
+
 ---
 
-## 🔴 Private repos + automerge — read before using the default preset
+## CI checks and private repositories
 
-**TL;DR: if your repo is private and your org is not on a paid GitHub plan (Team or Enterprise), use the [conservative preset](#conservative-preset) instead.**
+The default preset uses **Renovate-managed PR automerge**, with `platformAutomerge: false`, `automergeType: "pr"` and `ignoreTests: false`.
+Renovate checks CI results itself and does not merge when checks are failing, pending, or absent, including on free private repositories without enforced branch protection.
+`internalChecksAsSuccess: false` prevents Renovate's own stability/confidence checks from standing in for repository CI.
 
-### Why automerge: true is unsafe without enforced branch protection
+```mermaid
+flowchart LR
+    A[Automerge-eligible PR] --> B{Reported CI checks}
+    B -->|Failed, pending or absent| C[Do not merge]
+    B -->|Passing| D{Within automerge window?}
+    D -->|No| C
+    D -->|Yes| E[Merge if otherwise eligible]
+```
 
-Renovate's automerge works by merging a PR as soon as it is eligible. "Eligible" means GitHub's branch merge conditions are satisfied. Those conditions come from branch protection rules — specifically: required status checks must pass, required reviewers must approve.
+This differs from GitHub-native automerge (`platformAutomerge: true`), which depends on GitHub's enforced required-check rules and cannot honor Renovate's `automergeSchedule`.
+Without required checks, platform-native automerge may merge before CI starts or despite failures.
+The previous version of this README incorrectly applied that caveat to all Renovate automerge; it applies to the platform-native mode.
 
-**GitHub's free plan does not enforce branch protection rules in private org repos.** Without enforcement, there are no conditions to satisfy. Renovate will merge the PR immediately after opening it — with failing CI, zero reviews, and no human ever seeing it.
+The preset controls Renovate's behavior, not GitHub permissions or other merge actors.
+It does not enforce human approvals where GitHub itself does not enforce them, and it cannot identify an expected workflow that never reports a result.
+Ensure CI triggers for Renovate PRs and reports a reliable aggregate pass/fail result; use the conservative preset where every merge needs human judgment.
 
-This is not a Renovate bug. Renovate is correctly using the GitHub API. The GitHub API allows the merge because the branch protection rules aren't enforced.
-
-### How to check
-
-If your org is on a free plan and any of your repos are private:
-
-1. Go to the repo → Settings → Branches → protection rule for `main`/`master`
-2. If you can't enable "Require status checks" or "Require a pull request before merging" at all, or if they're greyed out — your plan doesn't enforce them
-3. Use the conservative preset for that repo
+References: [Renovate checks before automerge](https://docs.renovatebot.com/configuration-options/#ignoretests), [absence of tests](https://docs.renovatebot.com/key-concepts/automerge/#absence-of-tests), [platform-native caveat](https://docs.renovatebot.com/configuration-options/#platformautomerge).
 
 ### Conservative preset
 
-Inherits all grouping rules, lockFileMaintenance, labels, and custom managers from the default preset. Disables all automerge. Safe for any repo regardless of branch protection setup.
+Inherits grouping, scheduling, lockFileMaintenance, labels and custom managers from the default preset.
+Disables all Renovate automerge so a human must merge every PR.
 
 ```jsonc
 {
@@ -102,7 +190,10 @@ Same deal. All GitHub Actions minor/patch/digest updates batch into a single **"
 |------|----------|
 | `extends: config:recommended` | Renovate defaults + dependency dashboard |
 | `labels: ["automated"]` | tag on all Renovate PRs |
-| `lockFileMaintenance` | weekly lock-file refresh PR |
+| `lockFileMaintenance` | first-Saturday monthly lock-file refresh PR |
+| Routine scheduling | Saturday 00:00–08:00 Europe/Prague, including branch updates and Renovate automerges |
+| CI churn controls | 2 commits/hour and 5 concurrent routine PRs per repo; 3-day release settling period where timestamps exist |
+| Vulnerability alerts | immediate eligibility, manual merge |
 | minor/patch/pin/digest | automerge (overridden for groups below) |
 | **GitHub Actions** | grouped, manual review |
 | GitHub Actions SHA pinning | third-party `uses:` pinned to commit SHA + exact version comment; `ArkanisCorporation/**` excluded |
