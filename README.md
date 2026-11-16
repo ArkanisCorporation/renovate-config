@@ -24,7 +24,7 @@ That's it. All grouping rules, automerge policy, lockFileMaintenance, and custom
 
 Routine branch creation, automatic branch updates and Renovate automerges run weekly on **Saturday, 00:00–08:00 Europe/Prague**.
 The timezone follows CET/CEST automatically.
-The conservative preset inherits the same schedule and continues to disable automerge.
+The conservative preset now inherits the same schedule and CI-gated automerge; use `:manual` to disable automerge entirely.
 
 ```mermaid
 flowchart TD
@@ -78,7 +78,7 @@ An eligible PR that misses the merge window waits for the next one.
 
 GitHub vulnerability-fix PRs bypass routine scheduling and rate limits, with release-age and dashboard approval delays removed explicitly here.
 They require human review and are only available where GitHub alerts, Renovate permissions and the dependency ecosystem support detection and remediation; this is not a scanner for every container or Helm vulnerability.
-The conservative preset keeps all automerge disabled, and existing consumer-specific safety rules still apply.
+The manual preset keeps all automerge disabled, and existing consumer-specific safety rules still apply.
 
 All limits are per repository, so many repositories can still contend for shared runners at once.
 For strict fleet-wide CI capacity, also use runner capacity controls or stagger repository windows.
@@ -125,11 +125,24 @@ The previous version of this README incorrectly applied that caveat to all Renov
 
 The preset controls Renovate's behavior, not GitHub permissions or other merge actors.
 It does not enforce human approvals where GitHub itself does not enforce them, and it cannot identify an expected workflow that never reports a result.
-Ensure CI triggers for Renovate PRs and reports a reliable aggregate pass/fail result; use the conservative preset where every merge needs human judgment.
+Ensure CI triggers for Renovate PRs and reports a reliable aggregate pass/fail result; use the manual preset where every merge needs human judgment.
 
 References: [Renovate checks before automerge](https://docs.renovatebot.com/configuration-options/#ignoretests), [absence of tests](https://docs.renovatebot.com/key-concepts/automerge/#absence-of-tests), [platform-native caveat](https://docs.renovatebot.com/configuration-options/#platformautomerge).
 
 ### Conservative preset
+
+This name remains as a compatibility alias for repositories that used it solely to work around GitHub-native automerge without enforced required checks.
+It now inherits the default preset's Renovate-managed, CI-gated automerge, including the Saturday merge window and existing manager/package review exceptions.
+**Behavior change:** consumers of `:conservative` can now automerge eligible updates after CI passes.
+Review these consumers' CI triggers before merging this shared-preset change; repositories that need human-only merging should switch to `:manual` first.
+
+```jsonc
+{
+    "extends": ["github>ArkanisCorporation/renovate-config:conservative"]
+}
+```
+
+### Manual preset
 
 Inherits grouping, scheduling, lockFileMaintenance, labels and custom managers from the default preset.
 Disables all Renovate automerge so a human must merge every PR.
@@ -138,7 +151,7 @@ Disables all Renovate automerge so a human must merge every PR.
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "github>ArkanisCorporation/renovate-config:conservative"
+        "github>ArkanisCorporation/renovate-config:manual"
     ],
     "reviewers": [
         "team:your-team-here"
@@ -240,7 +253,7 @@ Renovate updates only the tag and leaves the image repository unchanged.
 Dynamic image names or tags are intentionally excluded because Renovate cannot resolve their values reliably.
 The matcher is text-based, so matching examples in comments are also candidates for updates.
 Keep commented container examples current, or rewrite them so they do not match one of the supported forms.
-The conservative preset inherits this manager automatically.
+The conservative and manual presets inherit this manager automatically.
 
 ---
 
@@ -274,7 +287,8 @@ Per-repo `packageRules` entries are **appended** to the preset's rules. Later ru
 ## Files
 
 - `default.json` — the preset loaded by `github>ArkanisCorporation/renovate-config`
-- `conservative.json` — the preset loaded by `github>ArkanisCorporation/renovate-config:conservative`; same as default but all automerge disabled
+- `conservative.json` — compatibility alias for the default CI-gated behavior; eligible updates can now automerge
+- `manual.json` — the preset loaded by `github>ArkanisCorporation/renovate-config:manual`; same cadence and groups, with all automerge disabled
 - `example-consumer.jsonc` — copy this into a consumer repo as `renovate.jsonc` and fill in the team slug
 
 > **Note:** `default.json` uses JSONC (JSON with comments). Renovate's config parser is JSONC-aware and handles this correctly. If a future Renovate version rejects inline comments in preset files, the same documentation lives in this README.

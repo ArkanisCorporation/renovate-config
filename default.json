@@ -44,9 +44,9 @@
         // ignoreTests: false), including on private repos without branch protection.
         // GitHub-native automerge instead needs enforced required checks; do not enable
         // platformAutomerge casually. Missing/unreported workflows cannot be enforced
-        // by this preset. Use conservative to require human merging for every update:
+        // by this preset. Use manual to require human merging for every update:
         //
-        //   "extends": ["github>ArkanisCorporation/renovate-config:conservative"]
+        //   "extends": ["github>ArkanisCorporation/renovate-config:manual"]
         //
         // See README.md for CI gating, scheduling and remaining boundaries.
 
