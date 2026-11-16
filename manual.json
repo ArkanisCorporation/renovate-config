@@ -1,0 +1,13 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    // Inherit the shared cadence and dependency groups, but require a human to merge.
+    "extends": ["github>ArkanisCorporation/renovate-config"],
+    "automerge": false,
+    "packageRules": [
+        {
+            "description": "Disable inherited automerge for every dependency",
+            "matchPackageNames": ["*"],
+            "automerge": false
+        }
+    ]
+}

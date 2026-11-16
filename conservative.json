@@ -1,30 +1,17 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    // Conservative preset — extends the default Arkanis preset but disables ALL automerge.
-    //
-    // USE THIS for private repos on GitHub's free plan.
-    //
-    // WHY: GitHub branch protection rules are not enforced in private org repos on the
-    // free plan. Without enforcement, automerge: true causes Renovate to merge PRs
-    // immediately — even if CI is failing and no one has reviewed. This preset is safe
-    // regardless of whether branch protection rules exist or are enforced.
+    // Compatibility preset for repositories that disabled automerge solely because
+    // GitHub-native automerge could not enforce checks on their private/free repository.
+    // The default now uses Renovate-managed PR automerge, waits for CI, and enforces
+    // the Saturday merge window, so this preset inherits that behavior unchanged.
+    // BEHAVIOR CHANGE: eligible updates can now automerge after CI passes.
+    // Existing manager/package manual-review exceptions still apply.
+    // For deliberately human-only merging use renovate-config:manual instead.
     //
     // USAGE — replace the extends line in your renovate.jsonc:
     //   "extends": ["github>ArkanisCorporation/renovate-config:conservative"]
     //
-    // Everything else (grouping, lockFileMaintenance, labels, custom managers) is
-    // inherited from the default preset unchanged. Only automerge is disabled.
     "extends": [
         "github>ArkanisCorporation/renovate-config"
-    ],
-    "packageRules": [
-        // Match every package after the base preset's rules have been applied.
-        // Renovate requires an explicit selector; this disables inherited automerge.
-        {
-            "matchPackageNames": [
-                "*"
-            ],
-            "automerge": false
-        }
     ]
 }

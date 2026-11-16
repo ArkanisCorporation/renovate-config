@@ -6,26 +6,49 @@
     "labels": [
         "automated"
     ],
+    // Batch routine CI work on Saturday mornings in the team's local timezone (DST-aware).
+    "timezone": "Europe/Prague",
+    "schedule": ["* 0-7 * * 6"],
+    "updateNotScheduled": false,
+    // GitHub-native automerge cannot honour Renovate's automergeSchedule.
+    "platformAutomerge": false,
+    "automergeType": "pr",
+    "ignoreTests": false,
+    // Renovate's own age/confidence checks must not substitute for repository CI.
+    "internalChecksAsSuccess": false,
+    "automergeSchedule": ["* 0-7 * * 6"],
+    // Limit both new branches and automatic rebases, not just new PRs; limits are per repo.
+    "commitHourlyLimit": 2,
+    "prHourlyLimit": 2,
+    "prConcurrentLimit": 5,
+    "rebaseWhen": "auto",
+    // Prefer releases that have had time to settle. Registries without timestamps still update.
+    "minimumReleaseAge": "3 days",
+    "minimumReleaseAgeBehaviour": "timestamp-optional",
+    "internalChecksFilter": "strict",
+    "vulnerabilityAlerts": {
+        "enabled": true,
+        "schedule": ["at any time"],
+        "updateNotScheduled": true,
+        "minimumReleaseAge": "0 days",
+        "dependencyDashboardApproval": false,
+        "automerge": false
+    },
     "lockFileMaintenance": {
-        "enabled": true
+        "enabled": true,
+        // Its own schedule overrides the normal window: first Saturday of each month only.
+        "schedule": ["* 0-7 1-7 * 6"]
     },
     "packageRules": [
-        // ⚠️ AUTOMERGE + PRIVATE REPOS WARNING:
-        // automerge: true is only safe when GitHub branch protection rules are actively
-        // enforced — specifically: required status checks must pass AND (optionally)
-        // required reviewers must approve before merge is allowed.
+        // Renovate-managed automerge checks CI itself (platformAutomerge: false,
+        // ignoreTests: false), including on private repos without branch protection.
+        // GitHub-native automerge instead needs enforced required checks; do not enable
+        // platformAutomerge casually. Missing/unreported workflows cannot be enforced
+        // by this preset. Use manual to require human merging for every update:
         //
-        // On GitHub's FREE plan, branch protection rules in PRIVATE org repos are NOT
-        // enforced at the API level. Renovate will merge PRs immediately upon creation,
-        // even if CI is failing and no one has reviewed. This applies to all automerge
-        // rules in this preset.
+        //   "extends": ["github>ArkanisCorporation/renovate-config:manual"]
         //
-        // If your repo is private and your org is not on a paid GitHub plan (Team or
-        // Enterprise), use the conservative preset instead, which disables all automerge:
-        //
-        //   "extends": ["github>ArkanisCorporation/renovate-config:conservative"]
-        //
-        // See README.md for full details.
+        // See README.md for CI gating, scheduling and remaining boundaries.
 
         // Automerge all minor/patch/pin/digest updates by default.
         // Individual manager rules below OVERRIDE this for groups that warrant review.
